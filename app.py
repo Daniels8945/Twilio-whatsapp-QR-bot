@@ -40,7 +40,7 @@ def send_whatsapp_message():
                 body= response_msg,
                 from_='whatsapp:+14155238886',
                 to= sender,
-                media_url=["https://fc2f-197-211-59-104.ngrok-free.app/qrcode.png"]
+                media_url=[""]
                 )
             print(f'Message sent! SID: {message.sid}')
 
