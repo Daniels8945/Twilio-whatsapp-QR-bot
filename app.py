@@ -55,8 +55,8 @@ def send_whatsapp_message():
             qr_file = "static/qrcode.png"
             qr.save(qr_file, format="PNG")
             
-            media_sid = upload_media(qr_file)
-            
+            media_sid = upload_media()
+
             if media_sid:
                 response_msg = "Here's you'r QR code"
                 message = client.messages.create(
