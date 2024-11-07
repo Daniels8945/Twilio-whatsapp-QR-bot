@@ -45,7 +45,7 @@ def upload_media():
 
 
 @app.route("/whatsapp", methods=["POST"])
-def send_whatsapp_message(media_sid, sender):
+def send_whatsapp_message(media_sid):
     """Send WhatsApp message using Twilio"""
     """Get the incoming message"""
 
