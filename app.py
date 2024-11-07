@@ -40,7 +40,7 @@ def send_whatsapp_message():
                 body= response_msg,
                 from_='whatsapp:+14155238886',
                 to= sender,
-                media_url=[""]
+                media_url=["https://twilio-whatsapp-qr-bot.onrender.com/qrcode.png"]
                 )
             print(f'Message sent! SID: {message.sid}')
 
