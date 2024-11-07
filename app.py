@@ -1,7 +1,7 @@
 import os
 from dotenv import load_dotenv
 from twilio.rest import Client
-from flask import Flask, request
+from flask import Flask, request, send_file
 from twilio.twiml.messaging_response import MessagingResponse
 import qrcode
 
@@ -16,7 +16,7 @@ client = Client(account_sid, auth_token)
 
 @app.route("/static/<path:filename>", methods=["GET"])
 def serve_qrcode(filename):
-    return app.send_static_file(filename)
+    return send_file("static/qrcode", mimetype="image/png")
 
 
 @app.route("/whatsapp", methods=["POST"])
@@ -33,7 +33,7 @@ def send_whatsapp_message():
 
             qr = qrcode.make(incoming_msg)
             qr_file = "static/qrcode.png"
-            qr.save(qr_file)
+            qr.save(qr_file, format="PNG")
             
             response_msg = "Here's you'r QR code"
             message = client.messages.create(
