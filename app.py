@@ -15,11 +15,9 @@ auth_token = os.getenv('TWILIO_AUTH_TOKEN')
 chat_service_sid = os.getenv("YOUR_CHAT_SERVICE_SID")
 client = Client(account_sid, auth_token)
 
-
 @app.route("/static/<path:filename>", methods=["GET"])
 def serve_qrcode(filename):
     return send_file("static/qrcode", mimetype="image/png")
-
 
 
 # Upload the QR code to Twilio Media API
@@ -28,13 +26,10 @@ def upload_media():
     qr_file_path = "static/qrcode.png"
     url = f"https://mcs.us1.twilio.com/v1/Services/{chat_service_sid}/Media"
 
-    headers = {
-        "Content-Type": "multipart/form-data",
-    }
     files = {
         "media": ("qrcode.png", open(qr_file_path, "rb"), "image/png")
     }
-    response = requests.post(url, headers=headers, files=files, auth=(account_sid, auth_token))
+    response = requests.post(url, files=files, auth=(account_sid, auth_token))
     if response.status_code == 201:
         media_sid = response.json()["sid"]
         print(f"Media uploaded successfully. Media SID: {media_sid}")
@@ -45,7 +40,7 @@ def upload_media():
 
 
 @app.route("/whatsapp", methods=["POST"])
-def send_whatsapp_message(media_sid):
+def send_whatsapp_message():
     """Send WhatsApp message using Twilio"""
     """Get the incoming message"""
 
@@ -60,9 +55,9 @@ def send_whatsapp_message(media_sid):
             qr_file = "static/qrcode.png"
             qr.save(qr_file, format="PNG")
             
-
+            media_sid = upload_media(qr_file)
+            
             if media_sid:
-
                 response_msg = "Here's you'r QR code"
                 message = client.messages.create(
                     body= response_msg,
