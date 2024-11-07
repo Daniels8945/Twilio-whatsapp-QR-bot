@@ -4,6 +4,7 @@ from twilio.rest import Client
 from flask import Flask, request, send_file
 from twilio.twiml.messaging_response import MessagingResponse
 import qrcode
+import requests
 
 load_dotenv()
 
@@ -11,6 +12,7 @@ app = Flask(__name__)
 
 account_sid = os.getenv('TWILIO_ACCOUNT_SID')
 auth_token = os.getenv('TWILIO_AUTH_TOKEN')
+chat_service_sid = os.getenv("YOUR_CHAT_SERVICE_SID")
 client = Client(account_sid, auth_token)
 
 
@@ -19,8 +21,31 @@ def serve_qrcode(filename):
     return send_file("static/qrcode", mimetype="image/png")
 
 
+
+# Upload the QR code to Twilio Media API
+def upload_media():
+
+    qr_file_path = "static/qrcode.png"
+    url = f"https://mcs.us1.twilio.com/v1/Services/{chat_service_sid}/Media"
+
+    headers = {
+        "Content-Type": "multipart/form-data",
+    }
+    files = {
+        "media": ("qrcode.png", open(qr_file_path, "rb"), "image/png")
+    }
+    response = requests.post(url, headers=headers, files=files, auth=(account_sid, auth_token))
+    if response.status_code == 201:
+        media_sid = response.json()["sid"]
+        print(f"Media uploaded successfully. Media SID: {media_sid}")
+        return media_sid
+    else:
+        print(f"Failed to upload media: {response.text}")
+        return None
+
+
 @app.route("/whatsapp", methods=["POST"])
-def send_whatsapp_message():
+def send_whatsapp_message(media_sid, sender):
     """Send WhatsApp message using Twilio"""
     """Get the incoming message"""
 
@@ -35,15 +60,26 @@ def send_whatsapp_message():
             qr_file = "static/qrcode.png"
             qr.save(qr_file, format="PNG")
             
-            response_msg = "Here's you'r QR code"
-            message = client.messages.create(
-                body= response_msg,
-                from_='whatsapp:+14155238886',
-                to= sender,
-                media_url=["https://twilio-whatsapp-qr-bot.onrender.com/static/qrcode.png"],
-                status_callback="https://twilio-whatsapp-qr-bot.onrender.com/status-callback"
+
+            if media_sid:
+
+                response_msg = "Here's you'r QR code"
+                message = client.messages.create(
+                    body= response_msg,
+                    from_='whatsapp:+14155238886',
+                    to= sender,
+                    media_url=[f"https://mcs.us1.twilio.com/v1/Services/{chat_service_sid}/Media/{media_sid}"],
+                    status_callback="https://twilio-whatsapp-qr-bot.onrender.com/status-callback"
+                    )
+                print(f'Message sent! SID: {message.sid}')
+
+            else: 
+                     # Handle case where media upload fails
+                client.messages.create(
+                    from_='whatsapp:+14155238886',
+                    body="Sorry, there was an error uploading your QR code. Please try again.",
+                    to=sender
                 )
-            print(f'Message sent! SID: {message.sid}')
 
          
         except Exception as e:
@@ -58,7 +94,6 @@ def send_whatsapp_message():
 
 
     else:
-        # response = MessagingResponse()
         response_msg = "Please send a link to generate a QR code."
         message = client.messages.create(
                 from_='whatsapp:+14155238886',
@@ -73,6 +108,8 @@ def status_callback():
     message_status = request.values.get("MessageStatus")
     print(f"Message status: {message_status}")
     return "", 200
+
+
 
 if __name__ == "__main__":
     app.run()
