@@ -14,9 +14,9 @@ auth_token = os.getenv('TWILIO_AUTH_TOKEN')
 client = Client(account_sid, auth_token)
 
 
-@app.route("/qrcode.png", methods=["GET"])
-def serve_qrcode():
-    return app.send_static_file("qrcode.png")
+@app.route("/static/<path:filename>", methods=["GET"])
+def serve_qrcode(filename):
+    return app.send_static_file(filename)
 
 
 @app.route("/whatsapp", methods=["POST"])
@@ -40,7 +40,8 @@ def send_whatsapp_message():
                 body= response_msg,
                 from_='whatsapp:+14155238886',
                 to= sender,
-                media_url=["https://twilio-whatsapp-qr-bot.onrender.com/qrcode.png"]
+                media_url=["https://twilio-whatsapp-qr-bot.onrender.com/static/qrcode.png"],
+                status_callback="https://twilio-whatsapp-qr-bot.onrender.com/status-callback"
                 )
             print(f'Message sent! SID: {message.sid}')
 
@@ -67,6 +68,11 @@ def send_whatsapp_message():
         )
     return str(MessagingResponse())
 
+@app.route("/status-callback", methods=["POST"])
+def status_callback():
+    message_status = request.values.get("MessageStatus")
+    print(f"Message status: {message_status}")
+    return "", 200
 
 if __name__ == "__main__":
     app.run()
